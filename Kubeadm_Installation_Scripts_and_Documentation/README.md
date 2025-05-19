@@ -82,7 +82,7 @@ This guide outlines the steps needed to set up a Kubernetes cluster using `kubea
     sudo modprobe br_netfilter
     sudo sysctl --system
 
-    ```
+  ```
 
 3. ** Install Docker**: 
     ```bash
@@ -97,25 +97,27 @@ This guide outlines the steps needed to set up a Kubernetes cluster using `kubea
 
     sudo apt-get update
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-    ```
+```
 
-4. **Install Containerd**:
+4. **Install cri-dockerd**:
     ```bash
-    sudo apt-get update
-    sudo apt-get install -y ca-certificates curl
-    sudo install -m 0755 -d /etc/apt/keyrings
-    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    sudo apt-get install -y git golang-go
 
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    git clone https://github.com/Mirantis/cri-dockerd.git
+    cd cri-dockerd
+    mkdir bin
+    go build -o bin/cri-dockerd
 
-    sudo apt-get update
-    sudo apt-get install -y containerd.io
+    sudo mv bin/cri-dockerd /usr/local/bin/
 
-    containerd config default | sed -e 's/SystemdCgroup = false/SystemdCgroup = true/' -e 's/sandbox_image = "registry.k8s.io\/pause:3.6"/sandbox_image = "registry.k8s.io\/pause:3.9"/' | sudo tee /etc/containerd/config.toml
+    sudo cp -a packaging/systemd/* /etc/systemd/system
+    sudo sed -i 's:/usr/bin/cri-dockerd:/usr/local/bin/cri-dockerd:' /etc/systemd/system/cri-docker.service
 
-    sudo systemctl restart containerd
-    sudo systemctl status containerd
+    sudo systemctl daemon-reexec
+    sudo systemctl daemon-reload
+    sudo systemctl enable cri-docker.service
+    sudo systemctl enable --now cri-docker.socket
+
     ```
 
 5. **Install Kubernetes Components**:
@@ -136,24 +138,30 @@ This guide outlines the steps needed to set up a Kubernetes cluster using `kubea
 
 1. **Initialize the Cluster**:
     ```bash
-    sudo kubeadm init
+    sudo kubeadm init --cri-socket unix:///var/run/cri-dockerd.sock --pod-network-cidr=10.244.0.0/16
+
     ```
 
 2. **Set Up Local kubeconfig**:
     ```bash
-    mkdir -p "$HOME"/.kube
-    sudo cp -i /etc/kubernetes/admin.conf "$HOME"/.kube/config
-    sudo chown "$(id -u)":"$(id -g)" "$HOME"/.kube/config
+    mkdir -p $HOME/.kube
+    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
     ```
 
 3. **Install a Network Plugin (Calico)**:
     ```bash
-    kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/calico.yaml
+    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
     ```
 
 4. **Generate Join Command**:
     ```bash
-    kubeadm token create --print-join-command
+    sudo kubeadm join <MASTER-IP>:6443 --token <token> \
+    --discovery-token-ca-cert-hash sha256:<hash> \
+    --cri-socket unix:///var/run/cri-dockerd.sock
+
     ```
 
 > Copy this generated token for next command.
