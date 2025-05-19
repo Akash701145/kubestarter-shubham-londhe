@@ -64,6 +64,8 @@ This guide outlines the steps needed to set up a Kubernetes cluster using `kubea
 1. **Disable Swap**: Required for Kubernetes to function correctly.
     ```bash
     sudo swapoff -a
+sudo sed -i '/ swap / s/^/#/' /etc/fstab
+
     ```
 
 2. **Load Necessary Kernel Modules**: Required for Kubernetes networking.
