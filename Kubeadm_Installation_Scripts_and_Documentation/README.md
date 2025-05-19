@@ -67,28 +67,36 @@ This guide outlines the steps needed to set up a Kubernetes cluster using `kubea
     sudo sed -i '/ swap / s/^/#/' /etc/fstab
   ```
 
-2. **Load Necessary Kernel Modules**: Required for Kubernetes networking.
+2. **Load Necessary Kernel Module and sysctl settings**: Required for Kubernetes networking.
     ```bash
     cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-    overlay
     br_netfilter
     EOF
 
-    sudo modprobe overlay
-    sudo modprobe br_netfilter
-    ```
-
-3. **Set Sysctl Parameters**: Helps with networking.
-    ```bash
     cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-    net.bridge.bridge-nf-call-iptables  = 1
     net.bridge.bridge-nf-call-ip6tables = 1
-    net.ipv4.ip_forward                 = 1
+    net.bridge.bridge-nf-call-iptables = 1
+    net.ipv4.ip_forward = 1
     EOF
 
+    sudo modprobe br_netfilter
     sudo sysctl --system
-    lsmod | grep br_netfilter
-    lsmod | grep overlay
+
+    ```
+
+3. ** Install Docker**: 
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates curl gnupg lsb-release gnupg2 software-properties-common apt-transport-https
+
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+    sudo add-apt-repository \
+    "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable"
+
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io
     ```
 
 4. **Install Containerd**:
