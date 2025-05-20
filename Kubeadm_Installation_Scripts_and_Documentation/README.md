@@ -182,8 +182,11 @@ This guide outlines the steps needed to set up a Kubernetes cluster using `kubea
 
 2. Paste the join command you got from the master node and append `--v=5` at the end:
     ```bash
-    sudo kubeadm join <private-ip-of-control-plane>:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash> --cri-socket 
-    "unix:///run/containerd/containerd.sock" --v=5
+    sudo kubeadm join 172.31.16.114:6443 \
+  --token qou6pp.fjzo6ayko9mydj2c \
+  --discovery-token-ca-cert-hash sha256:febcf51565ee94ca1e97c04d61810100b233ca65f9399ada5265fcff0595216b \
+  --cri-socket unix:///var/run/cri-dockerd.sock --v=5
+
     ```
 
     > **Note**: When pasting the join command from the master node:
