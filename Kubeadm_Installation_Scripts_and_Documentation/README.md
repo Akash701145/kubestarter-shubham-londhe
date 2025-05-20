@@ -176,7 +176,8 @@ This guide outlines the steps needed to set up a Kubernetes cluster using `kubea
 
 1. Perform pre-flight checks:
     ```bash
-    sudo kubeadm reset pre-flight checks
+    sudo kubeadm reset --cri-socket unix:///var/run/cri-dockerd.sock
+
     ```
 
 2. Paste the join command you got from the master node and append `--v=5` at the end:
