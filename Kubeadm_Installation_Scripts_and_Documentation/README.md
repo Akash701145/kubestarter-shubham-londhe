@@ -69,20 +69,24 @@ This guide outlines the steps needed to set up a Kubernetes cluster using `kubea
 
 2. **Load Necessary Kernel Module and sysctl settings**: Required for Kubernetes networking.
     ```bash
+    # Load the br_netfilter module on boot
     cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
     br_netfilter
     EOF
 
+    # Apply required sysctl params for Kubernetes networking
     cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
     net.bridge.bridge-nf-call-ip6tables = 1
     net.bridge.bridge-nf-call-iptables = 1
     net.ipv4.ip_forward = 1
     EOF
 
+    # Load the module immediately
     sudo modprobe br_netfilter
-    sudo sysctl --system
 
-  ```
+    # Apply sysctl params without reboot
+    sudo sysctl --system
+ ```
 
 3. ** Install Docker**: 
     ```bash
